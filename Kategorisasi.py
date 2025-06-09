@@ -111,4 +111,12 @@ def kategorisasi_otomatis(data_input_json):
         "predicted_category": predicted_category,
         "confidence": round(confidence, 4)
     }
+    
+if __name__ == '__main__':
+    if not _muat_aset_gagal:
+        print("\\n--- Tes Modul Kategorisasi.py ---")
+        test_data = {"description": "Makan siang nasi padang sederhana", "amount": 22000}
+        hasil = kategorisasi_otomatis(test_data)
+        print(f"Input: {test_data}")
+        print(f"Output: {hasil}")
 
