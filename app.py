@@ -1,12 +1,25 @@
-
 # Nama file: app.py
-# Tujuan: Membuat server API Flask untuk layanan kategorisasi.
-
 import os
 from flask import Flask, request, jsonify
-import Kategorisasi # <--- PERBAIKAN DI SINI
+import Kategorisasi
+
+# --- SETUP LOGGING ---
+import logging
+from logging.handlers import RotatingFileHandler
+
+# Pastikan aplikasi memiliki izin untuk menulis ke file ini
+log_file = 'app_errors.log' 
+handler = RotatingFileHandler(log_file, maxBytes=10000, backupCount=3)
+handler.setLevel(logging.ERROR) # Hanya catat error dan yang lebih parah
+formatter = logging.Formatter(
+    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+)
+handler.setFormatter(formatter)
+# --- AKHIR SETUP LOGGING ---
 
 app = Flask(__name__)
+# Menambahkan handler ke logger aplikasi Flask
+app.logger.addHandler(handler)
 
 # Menambahkan endpoint untuk health check
 @app.route('/')
@@ -25,19 +38,16 @@ def categorize_transaction_route():
     
     try:
         data_input = request.get_json()
-        # Panggil fungsi dari modul Kategorisasi
         hasil_kategori = Kategorisasi.kategorisasi_otomatis(data_input)
         return jsonify(hasil_kategori)
     except (KeyError, TypeError, ValueError) as e:
-        # Menangkap error validasi dari modul Kategorisasi
         return jsonify({"error": f"Input data tidak valid: {str(e)}"}), 400
     except Exception as e:
-        # Menangkap error lain yang mungkin terjadi
-        print(f"Error di /categorize/transaction: {str(e)}")
+        # --- PERUBAHAN DI SINI ---
+        # Mencatat traceback lengkap ke file log
+        app.logger.error('Terjadi kesalahan internal tak terduga', exc_info=True)
         return jsonify({"error": "Terjadi kesalahan internal saat melakukan kategorisasi."}), 500
     
 if __name__ == '__main__':
-    # Port diambil dari environment variable, default ke 5000 jika tidak ada
     port = int(os.environ.get("PORT", 5000))
-    # Host harus 0.0.0.0 agar bisa diakses dari luar container/server
     app.run(host="0.0.0.0", port=port)
